@@ -50,11 +50,11 @@ usage:	db	'WIZCFG version 1.4',CR,LF
 	db	'       WIZCFG M macadr',CR,LF
 	db	'       WIZCFG N cid',CR,LF
 	db	'       WIZCFG {0..7} sid ipadr port [keep]',CR,LF
-if ( (SPIDEV eq MT011) OR (SPIDEV eq z180csio) )
+if ( (SPIDEV eq MT011) OR (SPIDEV eq Z180CSIO) )
 	db	'Sets network config in W5500',CR,LF
-if (SPIDEV eq z180csio)
+if (SPIDEV eq Z180CSIO)
 	db	'Built for SC126 Z180 CSIO',CR,LF
-
+endif
 else
 	db	'       WIZCFG R',CR,LF
 	db	'       WIZCFG L {A:..P:,LST:}',CR,LF

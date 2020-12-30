@@ -558,6 +558,27 @@ chk6:	mvi	a,001$00$000b
 chk4:	pop	h
 	ret
 
+; Waits for Sn_RX_RSR to become non-zero
+; Returns HL=Sn_RX_RSR, non-zero and stable
+wait4rsr:
+       	lxi     b,0
+w40:   	push    b
+       	mvi     e,sn$rxrsr      ; length
+       	call    getwiz2
+       	pop     b
+       	mov     a,h
+       	ora     l
+       	jrz     wait4rsr        ; make sure BC=0
+       	mov     a,c
+       	xra     l
+       	jrnz    w41
+       	mov     a,b
+       	xra     h
+       	rz
+w41:   	mov     c,l
+       	mov     b,h
+       	jr      w40
+
 ;	Receive Message from Network
 RCVMSG:			; BC = message addr
 	sbcd	msgptr
@@ -568,11 +589,7 @@ RCVMSG:			; BC = message addr
 	lxi	h,0
 	shld	totlen
 rm0:	; D must be socket base...
-	mvi	e,sn$rxrsr	; length
-	call	getwiz2
-	mov	a,h
-	ora	l
-	jrz	rm0
+        call    wait4rsr
 	shld	msglen		; not CP/NET msg len
 	mvi	e,sn$rxrd	; pointer
 	call	getwiz2	; get rxrd addr
@@ -611,6 +628,9 @@ rm0:	; D must be socket base...
 	dad	d	; subtract what we already have
 	jrnc	rerr	; something is wrong, if still neg
 	shld	totlen
+        lda     cursok  ; must restore D=socket BSB
+        ori     sock0
+        mov     d,a
 	mov	a,h
 rm1:	ora	l
 	jnz	rm0

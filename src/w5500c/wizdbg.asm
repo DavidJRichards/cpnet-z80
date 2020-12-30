@@ -194,6 +194,23 @@ nocpnt:
 
 if 1
 ;------------------------------------------------------------------------------
+;
+; SHORT DELAY FUNCTIONS.  NO CLOCK SPEED COMPENSATION, SO THEY
+; WILL RUN LONGER ON SLOWER SYSTEMS.  THE NUMBER INDICATES THE
+; NUMBER OF CALL/RET INVOCATIONS.  A SINGLE CALL/RET IS
+; 27 T-STATES ON A Z80, 25 T-STATES ON A Z180
+;
+;			; Z80	Z180
+;			; ----	----
+DLY64:	CALL	DLY32	; 1728	1600
+DLY32:	CALL	DLY16	; 864	800
+DLY16:	CALL	DLY8	; 432	400
+DLY8:	CALL	DLY4	; 216	200
+DLY4:	CALL	DLY2	; 108	100
+DLY2:	CALL	DLY1	; 54	50
+DLY1:	RET		; 27	25
+;
+;------------------------------------------------------------------------------
 cmirror:
 	mov	c,a		; a = 76543210
 	rlc
@@ -216,6 +233,9 @@ cslower:
 	in0	a,(CNTR)	;check the CSIO is not enabled
 	ani	CNTRTE+CNTRRE
 	jrnz	cslower
+	sta     cntr0           ; save copy of CNTR
+	ani     0               ; clear clock divisor bits
+	out0    a,(CNTR)
 	mvi	a,0f7h
 	out0	a,(IOSYSTEM)
 	ret
@@ -224,6 +244,8 @@ csraise:
 	in0	a,(CNTR)	;check the CSIO is not enabled
 	ani	CNTRTE+CNTRRE
 	jrnz	csraise
+	lda     cntr0           ; get saved CNTR with system clock divisor bits
+	out0    a,(CNTR)        ; and restore it
 
 	mvi	a,0ffh		;SC130 SC1 CS is on Bit 2 and SC126 SC2 CS is on Bit 3, raise both.
 	out0	a,(IOSYSTEM)
@@ -235,6 +257,7 @@ writewait:
 	in0	a,(CNTR)
 	tsti	CNTRTE+CNTRRE	; check the CSIO is not enabled
 	jrnz	writewait
+        call    DLY32           ; DELAY FOR FINAL BIT
 
 	ori	CNTRTE		; set TE bit
 	out0	c,(TRDR)	; load (reversed) byte to transmit
@@ -268,16 +291,16 @@ wizget:
 	lhld	off
 	mov	a,l
 	call	writebyte	; addr lo
-	lda	bsb		; 
+	lda	bsb		;
 	call	writebyte
 	lhld    num             ; count into HL
-	lxi	d,buf		; address to save to, DE	
-wizgetloop:	
+	lxi	d,buf		; address to save to, DE
+wizgetloop:
  	call	readbyte 	; data
-	stax	d	
+	stax	d
     	inx	d		; ptr++
         dcx     h               ; count down 1
-        mov     a,h             
+        mov     a,h
         ora     l
         jrnz    wizgetloop
 	call	csraise
@@ -299,12 +322,12 @@ wizset:
 	call	writebyte
 	lhld    num             ; count into HL
 	lxi	d,buf		; data address
-wizsetloop:	
+wizsetloop:
     	ldax	d
     	call 	writebyte
    	inx	d		; ptr++
         dcx 	h               ; count down 1
-        mov     a,h             
+        mov     a,h
         ora     l
         jrnz    wizgetloop
 	call	csraise
@@ -450,6 +473,7 @@ pd0:	mov	a,m
 pd1:	pop	h
 	ret	; CY still set
 
+cntr0   ds      1
 	ds	40
 stack:	ds	0
 usrstk:	dw	0

@@ -64,6 +64,23 @@ DISCON	equ	08h
 	cseg
 
 ;------------------------------------------------------------------------------
+;
+; SHORT DELAY FUNCTIONS.  NO CLOCK SPEED COMPENSATION, SO THEY
+; WILL RUN LONGER ON SLOWER SYSTEMS.  THE NUMBER INDICATES THE
+; NUMBER OF CALL/RET INVOCATIONS.  A SINGLE CALL/RET IS
+; 27 T-STATES ON A Z80, 25 T-STATES ON A Z180
+;
+;			; Z80	Z180
+;			; ----	----
+DLY64:	CALL	DLY32	; 1728	1600
+DLY32:	CALL	DLY16	; 864	800
+DLY16:	CALL	DLY8	; 432	400
+DLY8:	CALL	DLY4	; 216	200
+DLY4:	CALL	DLY2	; 108	100
+DLY2:	CALL	DLY1	; 54	50
+DLY1:	RET		; 27	25
+;
+;------------------------------------------------------------------------------
 ; reverse or mirror the bits in a byte
 ; 76543210 -> 01234567
 ;
@@ -104,6 +121,9 @@ cslower:
 	in0	a,(CNTR)	;check the CSIO is not enabled
 	ani	CNTRTE+CNTRRE
 	jrnz	cslower
+	sta     cntr0           ; save copy of CNTR
+	ani     0               ; clear clock divisor bits
+	out0    a,(CNTR)
 
 ;	mov	a,l
 ;	ani	01h		;isolate SD CS 0 and 1 (to prevent bad input).    
@@ -123,6 +143,8 @@ csraise:
 	in0	a,(CNTR)	;check the CSIO is not enabled
 	ani	CNTRTE+CNTRRE
 	jrnz	csraise
+	lda     cntr0           ; get saved CNTR with system clock divisor bits
+	out0    a,(CNTR)        ; and restore it
 
 	mvi	a,0ffh		;SC130 SC1 CS is on Bit 2 and SC126 SC2 CS is on Bit 3, raise both.
 	out0	a,(IOSYSTEM)
@@ -140,7 +162,8 @@ writewait:
 	in0	a,(CNTR)
 	tsti	CNTRTE+CNTRRE	; check the CSIO is not enabled
 	jrnz	writewait
-
+        call    DLY32           ; DELAY FOR FINAL BIT
+        
 	ori	CNTRTE		; set TE bit
 	out0	c,(TRDR)	; load (reversed) byte to transmit
 	out0	a,(CNTR)	; enable transmit
@@ -387,6 +410,7 @@ endif
 	ret
 
 	dseg
+cntr0   ds      1
 tmp:	db	0
 
 	end
