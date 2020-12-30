@@ -66,17 +66,21 @@ Install and build as above.  make NIC=serial HBA=rc-siob
 
 Your next test is to configure the B port as follows. b:mode com1: 57600,n,8,1
 
-Then set up the ~/cpnet-z80/contrib/CpnetSerialServer config file. 
-cpnet_tty=/dev/ttyUSB2 57600 
+Then set up the ~/cpnet-z80/contrib/CpnetSerialServer config file.
+```
+cpnet_tty=/dev/ttyUSB2 57600
 cpnet_proto=BINARY
 cpnet_cid=01
 cpnet_server03=HostFileBdos
+```
 
 Start the server with ./serialserver conf=config
 then start the CP/M network with the following.
+```
 b:pip a:=c:ccp.spr
 cpnetldr
 network k:=c:[3]
+```
 
 See server documentation for further details.
 

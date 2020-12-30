@@ -1,6 +1,6 @@
 ; wizregs.sub
 wizcfg
-wizdbg g 0 0 48 ; Common register
+wizdbg g 0 0 32 ; Common register
 wizdbg g 1 0 48 ; Socket 0
-wizdbg g 2 0 48 ; Transmitted
-wizdbg g 3 0 48 ; Received
+wizdbg g 2 0 2048 ; Transmitted
+wizdbg g 3 0 2048 ; Received
